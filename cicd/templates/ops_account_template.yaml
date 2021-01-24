@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  Deployer:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: ApplicationDeployer
+      Policies:
+        - PolicyName: AccessToTheDeploymentAccounts
+          PolicyDocument: |
+            {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Action": ["sts:AssumeRole"],
+                    "Resource": "*"
+                }]
+            }
+  DeployerCredentialRotationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../
+      Handler: iam_key_rotation.handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          DeployerUserName: !Ref Deployer
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - iam:ListAccessKeys
+                - iam:CreateAccessKey
+                - iam:DeleteAccessKey
+              Resource: !GetAtt Deployer.Arn
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: '*'
+      Events:
+        schedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)

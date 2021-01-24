@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  DeployerUserArn:
+    Type: String
+
+Resources:
+  CFNDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: GrantCloudFormationFullAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+  DeployerAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref DeployerUserArn
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: AccessRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:*'
+                Resource:
+                  - !Join ['',[ 'arn:aws:s3:::',!Sub "application-artifacts-${AWS::Region}-${AWS::AccountId}", '/*' ] ]
+                  - !Join ['',[ 'arn:aws:s3:::',!Sub "application-artifacts-${AWS::Region}-${AWS::AccountId}" ] ]
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: !GetAtt CFNDeploymentRole.Arn
+              - Effect: Allow
+                Action:
+                  - 'cloudformation:*'
+                Resource: '*'
+
+  ArtifactsBucketKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Artifact encryption/decryption cmk
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: !Ref AWS::StackName
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt DeployerAccessRole.Arn
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:DescribeKey
+            Resource: '*'
+
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "application-artifacts-${AWS::Region}-${AWS::AccountId}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: !GetAtt ArtifactsBucketKey.Arn
+              SSEAlgorithm: aws:kms
+
+  ArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:*"
+            Resource:
+              - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket, '/*']]
+              - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket]]
+            Principal:
+              AWS: !GetAtt DeployerAccessRole.Arn
+

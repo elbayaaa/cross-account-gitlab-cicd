@@ -1,0 +1,123 @@
+image: amazon/aws-sam-cli-build-image-python3.8
+
+before_script:
+  - yum install -y jq
+
+stages:
+  - test
+  - build
+  - staging
+  - staging-integration-test
+  - prod
+
+unit-test:
+  stage: test
+  script: |
+    pip install pytest
+    pip install -r ${CI_PROJECT_DIR}/hello_world/requirements.txt
+    python -m pytest tests/unit
+
+build-and-deploy-feature:
+  stage: build
+  except:
+    - mainline
+  script: |
+    . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
+                          $AWS_SECRET_ACCESS_KEY \
+                          eu-west-1 \
+                          arn:aws:iam::123456789012:role/cicd-deployment-stack-DeployerAccessRole-PL3L2HJGED5O \
+                          feature-deployment
+    sam build
+    sam deploy --stack-name features-${CI_COMMIT_REF_NAME}-cfn-stack \
+               --capabilities CAPABILITY_IAM \
+               --region eu-west-1 \
+               --s3-bucket application-artifacts-eu-west-1-123456789012 \
+               --no-fail-on-empty-changeset \
+               --role-arn arn:aws:iam::123456789012:role/cicd-deployment-stack-CFNDeploymentRole-1CL7TZZ1MW69P
+build:
+  stage: build
+  only:
+    - mainline
+  script: |
+    sam build
+    user_access_key_id=$AWS_ACCESS_KEY_ID
+    user_secret_access_key=$AWS_SECRET_ACCESS_KEY
+    . cicd/assume-role.sh $user_access_key_id \
+                          $user_secret_access_key \
+                          eu-west-1 \
+                          arn:aws:iam::123456789012:role/cicd-deployment-stack-DeployerAccessRole-PL3L2HJGED5O \
+                          staging-deployment
+    sam package \
+          --s3-bucket application-artifacts-eu-west-1-123456789012 \
+          --region eu-west-1 \
+          --output-template-file packaged-eu-west-1-123456789012.yaml
+
+    . cicd/assume-role.sh $user_access_key_id \
+                          $user_secret_access_key \
+                          us-west-2 \
+                          arn:aws:iam::210987654321:role/cicd-deployment-stack-DeployerAccessRole-1S9SUOQ2JQXAQ \
+                          prod-deployment
+    sam package \
+           --s3-bucket application-artifacts-us-west-2-210987654321 \
+           --region us-west-2 \
+           --output-template-file packaged-us-west-2-210987654321.yaml
+  artifacts:
+    paths:
+      - packaged-eu-west-1-123456789012.yaml
+      - packaged-us-west-2-210987654321.yaml
+    expire_in: 1 year
+
+deploy-staging:
+  stage: staging
+  only:
+    - mainline
+  script: |
+    . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
+                          $AWS_SECRET_ACCESS_KEY \
+                          eu-west-1 \
+                          arn:aws:iam::123456789012:role/cicd-deployment-stack-DeployerAccessRole-PL3L2HJGED5O \
+                          staging-deployment
+    sam deploy --stack-name staging-cfn-stack \
+               --template packaged-eu-west-1-123456789012.yaml \
+               --capabilities CAPABILITY_IAM \
+               --region eu-west-1 \
+               --s3-bucket application-artifacts-eu-west-1-123456789012 \
+               --no-fail-on-empty-changeset \
+               --role-arn arn:aws:iam::123456789012:role/cicd-deployment-stack-CFNDeploymentRole-1CL7TZZ1MW69P
+
+staging-integration-test:
+  stage: staging-integration-test
+  only:
+    - mainline
+  script: |
+    pip install -r ${CI_PROJECT_DIR}/tests/integration/requirements.txt
+    . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
+                          $AWS_SECRET_ACCESS_KEY \
+                          eu-west-1 \
+                          arn:aws:iam::123456789012:role/cicd-deployment-stack-DeployerAccessRole-PL3L2HJGED5O \
+                          staging-deployment
+    apiDomain=$(aws cloudformation describe-stack-resource \
+                                   --logical-resource-id ServerlessRestApi \
+                                   --stack-name staging-cfn-stack \
+                                   --region eu-west-1 \
+                                   --query 'StackResourceDetail.PhysicalResourceId' \
+                                   --output text)
+    API_DOMAIN=$apiDomain REGION=eu-west-1 python -m unittest discover -s tests/integration
+
+deploy-prod:
+  stage: prod
+  only:
+    - mainline
+  script: |
+    . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
+                          $AWS_SECRET_ACCESS_KEY \
+                          us-west-2 \
+                          arn:aws:iam::210987654321:role/cicd-deployment-stack-DeployerAccessRole-1S9SUOQ2JQXAQ \
+                          prod-deployment
+    sam deploy --stack-name prod-cfn-stack \
+               --template packaged-us-west-2-210987654321.yaml \
+               --capabilities CAPABILITY_IAM \
+               --region us-west-2 \
+               --s3-bucket application-artifacts-us-west-2-210987654321 \
+               --no-fail-on-empty-changeset \
+               --role-arn arn:aws:iam::210987654321:role/cicd-deployment-stack-CFNDeploymentRole-GJVURRAG2BLP
