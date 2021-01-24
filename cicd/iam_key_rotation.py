@@ -27,7 +27,7 @@ def handler(event, context):
         iam_client.delete_access_key(UserName=iam_username, AccessKeyId=key['AccessKeyId'])
 
     gitlab_access_token = secrets_manager_client.get_secret_value(SecretId='gitlab-token')['SecretString']
-    gitlab_project = "https://gitlab.com/api/v4/projects/23135250/"
+    gitlab_project = "https://gitlab.com/api/v4/projects/23135250/" # change to the correct project url
     headers = {"PRIVATE-TOKEN": gitlab_access_token}
     requests.put(gitlab_project + "variables/AWS_ACCESS_KEY_ID", headers=headers,
                      data={"value": new_key['AccessKey']['AccessKeyId']})
