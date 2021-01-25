@@ -12,6 +12,9 @@ stages:
 
 unit-test:
   stage: test
+  only:
+    - mainline
+    - /^feature-*$/
   script: |
     pip install pytest
     pip install -r ${CI_PROJECT_DIR}/hello_world/requirements.txt
@@ -19,8 +22,8 @@ unit-test:
 
 build-and-deploy-feature:
   stage: build
-  except:
-    - mainline
+  only:
+    - /^feature-*$/
   script: |
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
