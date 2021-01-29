@@ -66,6 +66,7 @@ Resources:
                   - "cloudformation:DescribeStackEvents"
                   - "cloudformation:DescribeStacks"
                   - "cloudformation:GetTemplateSummary"
+                  - "cloudformation:DescribeStackResource"
                 Resource: '*'
 
 Outputs:
