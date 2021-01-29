@@ -43,31 +43,20 @@ build:
     - mainline
   script: |
     sam build
-    user_access_key_id=$AWS_ACCESS_KEY_ID
-    user_secret_access_key=$AWS_SECRET_ACCESS_KEY
-    . cicd/assume-role.sh $user_access_key_id \
-                          $user_secret_access_key \
-                          {{STAGING_REGION}} \
-                          {{STAGING_DEPLOYER_ACCESS_ROLE_ARN}} \
-                          staging-deployment
-    sam package \
-          --s3-bucket {{STAGING_ARTIFACTS_BUCKET}} \
-          --region {{STAGING_REGION}} \
-          --output-template-file packaged-{{STAGING_REGION}}-{{STAGING_ACCOUNT_ID}}.yaml
 
-    . cicd/assume-role.sh $user_access_key_id \
-                          $user_secret_access_key \
-                          {{PROD_REGION}} \
-                          {{PROD_DEPLOYER_ACCESS_ROLE_ARN}} \
-                          prod-deployment
     sam package \
-           --s3-bucket {{PROD_ARTIFACTS_BUCKET}} \
-           --region {{PROD_REGION}} \
-           --output-template-file packaged-{{PROD_REGION}}-{{PROD_ACCOUNT_ID}}.yaml
+          --s3-bucket {{EU-WEST-1_ARTIFACTS_BUCKET}} \
+          --region eu-west-1 \
+          --output-template-file packaged-eu-west-1.yaml
+
+    sam package \
+           --s3-bucket {{US-EAST-2_ARTIFACTS_BUCKET}} \
+           --region us-east-2 \
+           --output-template-file packaged-us-east-2.yaml
   artifacts:
     paths:
-      - packaged-{{STAGING_REGION}}-{{STAGING_ACCOUNT_ID}}.yaml
-      - packaged-{{PROD_REGION}}-{{PROD_ACCOUNT_ID}}.yaml
+      - packaged-eu-west-1.yaml
+      - packaged-us-east-2.yaml
     expire_in: 1 year
 
 deploy-staging:
@@ -81,7 +70,7 @@ deploy-staging:
                           {{STAGING_DEPLOYER_ACCESS_ROLE_ARN}} \
                           staging-deployment
     sam deploy --stack-name staging-cfn-stack \
-               --template packaged-{{STAGING_REGION}}-{{STAGING_ACCOUNT_ID}}.yaml \
+               --template packaged-{{STAGING_REGION}}.yaml \
                --capabilities CAPABILITY_IAM \
                --region {{STAGING_REGION}} \
                --s3-bucket {{STAGING_ARTIFACTS_BUCKET}} \
@@ -118,7 +107,7 @@ deploy-prod:
                           {{PROD_DEPLOYER_ACCESS_ROLE_ARN}} \
                           prod-deployment
     sam deploy --stack-name prod-cfn-stack \
-               --template packaged-{{PROD_REGION}}-{{PROD_ACCOUNT_ID}}.yaml \
+               --template packaged-{{PROD_REGION}}.yaml \
                --capabilities CAPABILITY_IAM \
                --region {{PROD_REGION}} \
                --s3-bucket {{PROD_ARTIFACTS_BUCKET}} \
