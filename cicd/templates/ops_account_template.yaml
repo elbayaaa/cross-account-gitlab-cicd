@@ -1,13 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-
+Parameters:
+  CicdPlatformTokenSecretKeyArn:
+    Type: String
+  CicdPlatformRestAPI:
+    Type: String
 Resources:
   Deployer:
     Type: AWS::IAM::User
     Properties:
-      UserName: ApplicationDeployer
       Policies:
-        - PolicyName: AccessToTheDeploymentAccounts
+        - PolicyName: AssumeRoles
           PolicyDocument: |
             {
                 "Version": "2012-10-17",
@@ -26,6 +29,8 @@ Resources:
       Environment:
         Variables:
           DeployerUserName: !Ref Deployer
+          CicdPlatformTokenSecretKeyArn: !Ref CicdPlatformTokenSecretKeyArn
+          CicdPlatformRestAPI: !Ref CicdPlatformRestAPI
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -37,9 +42,16 @@ Resources:
               Resource: !GetAtt Deployer.Arn
             - Effect: Allow
               Action: secretsmanager:GetSecretValue
-              Resource: '*'
+              Resource: !Ref CicdPlatformTokenSecretKeyArn
       Events:
         schedule:
           Type: Schedule
           Properties:
             Schedule: rate(1 hour)
+
+
+
+Outputs:
+  Deployer:
+    Description: ARN of the IAM User(Deployer)
+    Value: !GetAtt Deployer.Arn

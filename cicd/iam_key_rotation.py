@@ -7,7 +7,8 @@ secrets_manager_client = boto3.client('secretsmanager')
 
 def handler(event, context):
     iam_username = os.environ['DeployerUserName']
-
+    cicd_platform_access_token_secret_key_arn = os.environ['CicdPlatformTokenSecretKeyArn']
+    cicd_platform_rest_api = os.environ['CicdPlatformRestAPI']
     # An IAM user can have no more than 2 access keys at a time. so if it already has two, delete one of them before creating the new key
     keys = iam_client.list_access_keys(UserName=iam_username)['AccessKeyMetadata']
 
@@ -26,10 +27,9 @@ def handler(event, context):
     for key in keys:
         iam_client.delete_access_key(UserName=iam_username, AccessKeyId=key['AccessKeyId'])
 
-    gitlab_access_token = secrets_manager_client.get_secret_value(SecretId='gitlab-token')['SecretString']
-    gitlab_project = "https://gitlab.com/api/v4/projects/23135250/" # change to the correct project url
+    gitlab_access_token = secrets_manager_client.get_secret_value(SecretId=cicd_platform_access_token_secret_key_arn)['SecretString']
     headers = {"PRIVATE-TOKEN": gitlab_access_token}
-    requests.put(gitlab_project + "variables/AWS_ACCESS_KEY_ID", headers=headers,
+    requests.put(cicd_platform_rest_api + "variables/AWS_ACCESS_KEY_ID", headers=headers,
                      data={"value": new_key['AccessKey']['AccessKeyId']})
-    requests.put(gitlab_project + "variables/AWS_SECRET_ACCESS_KEY",
-                 headers=headers, data={"value": new_key['AccessKey']['SecretAccessKey']})
+    requests.put(cicd_platform_rest_api + "variables/AWS_SECRET_ACCESS_KEY", headers=headers,
+                     data={"value": new_key['AccessKey']['SecretAccessKey']})
