@@ -45,6 +45,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 's3:GetObject*'
+                  - 's3:PutObject*'
                   - 's3:GetBucket*'
                   - 's3:List*'
                 Resource: '*'
@@ -59,14 +60,12 @@ Resources:
                 Resource: !GetAtt CFNDeploymentRole.Arn
               - Effect: Allow
                 Action:
-                  - "cloudformation:CreateStack"
-                  - "cloudformation:DescribeStack"
-                  - "cloudformation:GetStackPolicy"
-                  - "cloudformation:GetTemplate"
-                  - "cloudformation:SetStackPolicy"
-                  - "cloudformation:UpdateStack"
-                  - "cloudformation:ValidateTemplate"
                   - "cloudformation:CreateChangeSet"
+                  - "cloudformation:DescribeChangeSet"
+                  - "cloudformation:ExecuteChangeSet"
+                  - "cloudformation:DescribeStackEvents"
+                  - "cloudformation:DescribeStacks"
+                  - "cloudformation:GetTemplateSummary"
                 Resource: '*'
 
 Outputs:

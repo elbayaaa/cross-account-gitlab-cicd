@@ -29,7 +29,7 @@ def handler(event, context):
 
     gitlab_access_token = secrets_manager_client.get_secret_value(SecretId=cicd_platform_access_token_secret_key_arn)['SecretString']
     headers = {"PRIVATE-TOKEN": gitlab_access_token}
-    requests.put(cicd_platform_rest_api + "variables/AWS_ACCESS_KEY_ID", headers=headers,
+    requests.put(cicd_platform_rest_api + "/variables/AWS_ACCESS_KEY_ID", headers=headers,
                      data={"value": new_key['AccessKey']['AccessKeyId']})
-    requests.put(cicd_platform_rest_api + "variables/AWS_SECRET_ACCESS_KEY", headers=headers,
+    requests.put(cicd_platform_rest_api + "/variables/AWS_SECRET_ACCESS_KEY", headers=headers,
                      data={"value": new_key['AccessKey']['SecretAccessKey']})
