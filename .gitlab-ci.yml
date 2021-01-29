@@ -27,16 +27,16 @@ build-and-deploy-feature:
   script: |
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
-                          {{STAGING_REGION}} \
-                          {{STAGING_DEPLOYER_ACCESS_ROLE_ARN}} \
+                          eu-west-1 \
+                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-13NZT8XBTCASK \
                           feature-deployment
     sam build
     sam deploy --stack-name features-${CI_COMMIT_REF_NAME}-cfn-stack \
                --capabilities CAPABILITY_IAM \
-               --region {{STAGING_REGION}} \
-               --s3-bucket {{STAGING_ARTIFACTS_BUCKET}} \
+               --region eu-west-1 \
+               --s3-bucket application-artifacts-eu-west-1-380564965876 \
                --no-fail-on-empty-changeset \
-               --role-arn {{STAGING_CFN_DEPLOYMENT_ROLE_ARN}}
+               --role-arn arn:aws:iam::288362329835:role/cicd-deployment-resources-CFNDeploymentRole-1AS1IN13HYTXK
 build:
   stage: build
   only:
@@ -45,12 +45,12 @@ build:
     sam build
 
     sam package \
-          --s3-bucket {{EU-WEST-1_ARTIFACTS_BUCKET}} \
+          --s3-bucket application-artifacts-eu-west-1-380564965876 \
           --region eu-west-1 \
           --output-template-file packaged-eu-west-1.yaml
 
     sam package \
-           --s3-bucket {{US-EAST-2_ARTIFACTS_BUCKET}} \
+           --s3-bucket application-artifacts-us-east-2-380564965876 \
            --region us-east-2 \
            --output-template-file packaged-us-east-2.yaml
   artifacts:
@@ -66,16 +66,16 @@ deploy-staging:
   script: |
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
-                          {{STAGING_REGION}} \
-                          {{STAGING_DEPLOYER_ACCESS_ROLE_ARN}} \
+                          eu-west-1 \
+                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-13NZT8XBTCASK \
                           staging-deployment
     sam deploy --stack-name staging-cfn-stack \
-               --template packaged-{{STAGING_REGION}}.yaml \
+               --template packaged-eu-west-1.yaml \
                --capabilities CAPABILITY_IAM \
-               --region {{STAGING_REGION}} \
-               --s3-bucket {{STAGING_ARTIFACTS_BUCKET}} \
+               --region eu-west-1 \
+               --s3-bucket application-artifacts-eu-west-1-380564965876 \
                --no-fail-on-empty-changeset \
-               --role-arn {{STAGING_CFN_DEPLOYMENT_ROLE_ARN}}
+               --role-arn arn:aws:iam::288362329835:role/cicd-deployment-resources-CFNDeploymentRole-1AS1IN13HYTXK
 
 staging-integration-test:
   stage: staging-integration-test
@@ -85,16 +85,16 @@ staging-integration-test:
     pip install -r ${CI_PROJECT_DIR}/tests/integration/requirements.txt
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
-                          {{STAGING_REGION}} \
-                          {{STAGING_DEPLOYER_ACCESS_ROLE_ARN}} \
+                          eu-west-1 \
+                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-13NZT8XBTCASK \
                           staging-deployment
     apiDomain=$(aws cloudformation describe-stack-resource \
                                    --logical-resource-id ServerlessRestApi \
                                    --stack-name staging-cfn-stack \
-                                   --region {{STAGING_REGION}} \
+                                   --region eu-west-1 \
                                    --query 'StackResourceDetail.PhysicalResourceId' \
                                    --output text)
-    API_DOMAIN=$apiDomain REGION={{STAGING_REGION}} python -m unittest discover -s tests/integration
+    API_DOMAIN=$apiDomain REGION=eu-west-1 python -m unittest discover -s tests/integration
 
 deploy-prod:
   stage: prod
@@ -103,13 +103,13 @@ deploy-prod:
   script: |
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
-                          {{PROD_REGION}} \
-                          {{PROD_DEPLOYER_ACCESS_ROLE_ARN}} \
+                          us-east-2 \
+                          arn:aws:iam::074570342695:role/cicd-deployment-resources-DeployerRole-1QU9NFGDXNO8K \
                           prod-deployment
     sam deploy --stack-name prod-cfn-stack \
-               --template packaged-{{PROD_REGION}}.yaml \
+               --template packaged-us-east-2.yaml \
                --capabilities CAPABILITY_IAM \
-               --region {{PROD_REGION}} \
-               --s3-bucket {{PROD_ARTIFACTS_BUCKET}} \
+               --region us-east-2 \
+               --s3-bucket application-artifacts-us-east-2-380564965876 \
                --no-fail-on-empty-changeset \
-               --role-arn {{PROD_CFN_DEPLOYMENT_ROLE_ARN}}
+               --role-arn arn:aws:iam::074570342695:role/cicd-deployment-resources-CFNDeploymentRole-V7N4UFSXUK5E
