@@ -28,7 +28,7 @@ build-and-deploy-feature:
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
                           eu-west-1 \
-                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-13NZT8XBTCASK \
+                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-BT7FWOJ0GX1D \
                           feature-deployment
     sam build
     sam deploy --stack-name features-${CI_COMMIT_REF_NAME}-cfn-stack \
@@ -36,7 +36,7 @@ build-and-deploy-feature:
                --region eu-west-1 \
                --s3-bucket application-artifacts-eu-west-1-380564965876 \
                --no-fail-on-empty-changeset \
-               --role-arn arn:aws:iam::288362329835:role/cicd-deployment-resources-CFNDeploymentRole-1AS1IN13HYTXK
+               --role-arn arn:aws:iam::288362329835:role/cicd-deployment-resources-CFNDeploymentRole-9JSTGWWC5Y27
 build:
   stage: build
   only:
@@ -67,7 +67,7 @@ deploy-staging:
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
                           eu-west-1 \
-                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-13NZT8XBTCASK \
+                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-BT7FWOJ0GX1D \
                           staging-deployment
     sam deploy --stack-name staging-cfn-stack \
                --template packaged-eu-west-1.yaml \
@@ -75,7 +75,7 @@ deploy-staging:
                --region eu-west-1 \
                --s3-bucket application-artifacts-eu-west-1-380564965876 \
                --no-fail-on-empty-changeset \
-               --role-arn arn:aws:iam::288362329835:role/cicd-deployment-resources-CFNDeploymentRole-1AS1IN13HYTXK
+               --role-arn arn:aws:iam::288362329835:role/cicd-deployment-resources-CFNDeploymentRole-9JSTGWWC5Y27
 
 staging-integration-test:
   stage: staging-integration-test
@@ -86,7 +86,7 @@ staging-integration-test:
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
                           eu-west-1 \
-                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-13NZT8XBTCASK \
+                          arn:aws:iam::288362329835:role/cicd-deployment-resources-DeployerRole-BT7FWOJ0GX1D \
                           staging-deployment
     apiDomain=$(aws cloudformation describe-stack-resource \
                                    --logical-resource-id ServerlessRestApi \
@@ -104,7 +104,7 @@ deploy-prod:
     . cicd/assume-role.sh $AWS_ACCESS_KEY_ID \
                           $AWS_SECRET_ACCESS_KEY \
                           us-east-2 \
-                          arn:aws:iam::074570342695:role/cicd-deployment-resources-DeployerRole-1QU9NFGDXNO8K \
+                          arn:aws:iam::074570342695:role/cicd-deployment-resources-DeployerRole-1UOJFUSTWWKCD \
                           prod-deployment
     sam deploy --stack-name prod-cfn-stack \
                --template packaged-us-east-2.yaml \
@@ -112,4 +112,4 @@ deploy-prod:
                --region us-east-2 \
                --s3-bucket application-artifacts-us-east-2-380564965876 \
                --no-fail-on-empty-changeset \
-               --role-arn arn:aws:iam::074570342695:role/cicd-deployment-resources-CFNDeploymentRole-V7N4UFSXUK5E
+               --role-arn arn:aws:iam::074570342695:role/cicd-deployment-resources-CFNDeploymentRole-1DCYC13CPLRQB
