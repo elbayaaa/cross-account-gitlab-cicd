@@ -54,27 +54,15 @@ Resources:
                 Resource:
                   - !Join ['',[ 'arn:aws:s3:::',!Ref ArtifactsBucket, '/*' ] ]
                   - !Join ['',[ 'arn:aws:s3:::',!Ref ArtifactsBucket ] ]
-                Condition:
-                  IpAddress:
-                    AWS:SourceIp:
-                      - 34.74.90.64/28
               - Effect: Allow
                 Action:
                   - 'kms:Decrypt'
                   - 'kms:DescribeKey'
                 Resource: !Ref ArtifactsBucketKeyArn
-                Condition:
-                  IpAddress:
-                    AWS:SourceIp:
-                      - 34.74.90.64/28
               - Effect: Allow
                 Action:
                   - 'iam:PassRole'
                 Resource: !GetAtt CFNDeploymentRole.Arn
-                Condition:
-                  IpAddress:
-                    AWS:SourceIp:
-                      - 34.74.90.64/28
               - Effect: Allow
                 Action:
                   - "cloudformation:CreateChangeSet"
@@ -85,10 +73,6 @@ Resources:
                   - "cloudformation:GetTemplateSummary"
                   - "cloudformation:DescribeStackResource"
                 Resource: '*'
-                Condition:
-                  IpAddress:
-                    AWS:SourceIp:
-                      - 34.74.90.64/28
 
 Outputs:
   DeployerRole:
