@@ -77,3 +77,10 @@ Resources:
               - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket]]
             Principal:
               AWS: !Ref DeploymentAccountsRootUserArns
+Outputs:
+  ArtifactsBucket:
+    Description: the ARN of the Artifacts bucket
+    Value: !GetAtt ArtifactsBucket.Arn
+  ArtifactsBucketKey:
+    Description: the ARN of the CMK used for Artifacts bucket encryption/decryption
+    Value: !GetAtt ArtifactsBucketKey.Arn
