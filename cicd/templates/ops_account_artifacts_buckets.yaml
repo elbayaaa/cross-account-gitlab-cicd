@@ -4,7 +4,7 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   OpsAccountUserArn:
     Type: String
-  DeploymentAccountsRootUserArns:
+  DeploymentAccountsIAMRoleArns:
     Type: List<String>
 
 Resources:
@@ -34,7 +34,7 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Principal:
-              AWS: !Ref DeploymentAccountsRootUserArns
+              AWS: !Ref DeploymentAccountsIAMRoleArns
             Action:
               - kms:Decrypt
               - kms:DescribeKey
@@ -60,7 +60,10 @@ Resources:
         Statement:
           - Effect: "Allow"
             Action:
-              - "s3:*"
+              - 's3:GetObject*'
+              - 's3:PutObject*'
+              - 's3:GetBucket*'
+              - 's3:List*'
             Resource:
               - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket, '/*']]
               - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket]]
@@ -76,7 +79,7 @@ Resources:
               - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket, '/*']]
               - !Join ['',['arn:aws:s3:::',!Ref ArtifactsBucket]]
             Principal:
-              AWS: !Ref DeploymentAccountsRootUserArns
+              AWS: !Ref DeploymentAccountsIAMRoleArns
 Outputs:
   ArtifactsBucket:
     Description: the ARN of the Artifacts bucket

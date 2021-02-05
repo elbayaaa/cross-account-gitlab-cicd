@@ -4,10 +4,6 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   DeployerUserArn:
     Type: String
-  ArtifactsBucket:
-    Type: String
-  ArtifactsBucketKeyArn:
-    Type: String
 Resources:
   CFNDeploymentRole:
     Type: AWS::IAM::Role
@@ -45,20 +41,6 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: Allow
-                Action:
-                  - 's3:GetObject*'
-                  - 's3:PutObject*'
-                  - 's3:GetBucket*'
-                  - 's3:List*'
-                Resource:
-                  - !Join ['',[ 'arn:aws:s3:::',!Ref ArtifactsBucket, '/*' ] ]
-                  - !Join ['',[ 'arn:aws:s3:::',!Ref ArtifactsBucket ] ]
-              - Effect: Allow
-                Action:
-                  - 'kms:Decrypt'
-                  - 'kms:DescribeKey'
-                Resource: !Ref ArtifactsBucketKeyArn
               - Effect: Allow
                 Action:
                   - 'iam:PassRole'
